@@ -23,3 +23,5 @@ loguru>=0.7
 # Optional: Jupyter for notebooks during exploration
 jupyterlab>=4.2
 ipykernel>=6.29
+
+
