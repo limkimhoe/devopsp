@@ -1,0 +1,25 @@
+# Web & API
+Flask>=3.0
+Flask-Cors>=4.0
+gunicorn>=21.2
+
+# DB & ORM
+SQLAlchemy>=2.0
+psycopg2-binary>=2.9
+alembic>=1.13
+python-dotenv>=1.0
+
+# ML / Data Science
+numpy>=1.26
+pandas>=2.2
+scikit-learn>=1.5
+scipy>=1.13
+joblib>=1.4
+
+# Utilities
+requests>=2.32
+loguru>=0.7
+
+# Optional: Jupyter for notebooks during exploration
+jupyterlab>=4.2
+ipykernel>=6.29
