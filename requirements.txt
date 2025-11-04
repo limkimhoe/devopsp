@@ -7,21 +7,29 @@ gunicorn>=21.2
 SQLAlchemy>=2.0
 psycopg2-binary>=2.9
 alembic>=1.13
+flask-migrate>=4.0
 python-dotenv>=1.0
 
-# ML / Data Science
-numpy>=1.26
-pandas>=2.2
-scikit-learn>=1.5
-scipy>=1.13
-joblib>=1.4
+# Auth, Security & Validation
+passlib[argon2]>=1.7
+PyJWT>=2.8
+cryptography>=41.0
+pydantic>=2.5
 
-# Utilities
+# API docs & validation helpers
+flask-smorest>=0.42
+marshmallow>=3.19
+
+# Rate limiting, logging
+Flask-Limiter>=2.6
+structlog>=23.0
+
+# Utilities & testing
 requests>=2.32
 loguru>=0.7
+pytest>=7.4
+coverage>=7.5
 
 # Optional: Jupyter for notebooks during exploration
 jupyterlab>=4.2
 ipykernel>=6.29
-
-

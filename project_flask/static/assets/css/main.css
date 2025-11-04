@@ -1,0 +1,6 @@
+/* Minimal custom styles */
+body { background: #f8f9fa; }
+.card { border-radius: .5rem; }
+.sticky-top thead { position: sticky; top: 0; z-index: 1; }
+.truncate-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.navbar-brand small { font-size: .85rem; opacity: .8; }

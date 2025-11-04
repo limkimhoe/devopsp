@@ -1,0 +1,7 @@
+/home/vscode/.local/lib/python3.11/site-packages/flask_limiter/_extension.py:364: UserWarning: Using the in-memory storage for tracking rate limits as no storage was explicitly specified. This is not recommended for production use. See: https://flask-limiter.readthedocs.io#configuring-a-storage-backend for documentation about configuring the storage backend.
+  warnings.warn(
+ * Serving Flask app 'project_flask'
+ * Debug mode: on
+{'name': 'werkzeug', 'level': 'INFO', 'message': '\x1b[31m\x1b[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.\x1b[0m\n * Running on all addresses (0.0.0.0)\n * Running on http://127.0.0.1:5001\n * Running on http://172.24.0.3:5001', 'module': '_internal', 'funcName': '_log', 'lineno': 97}
+{'name': 'werkzeug', 'level': 'INFO', 'message': '\x1b[33mPress CTRL+C to quit\x1b[0m', 'module': '_internal', 'funcName': '_log', 'lineno': 97}
+{'name': 'werkzeug', 'level': 'INFO', 'message': ' * Restarting with stat', 'module': '_internal', 'funcName': '_log', 'lineno': 97}

@@ -1,0 +1,31 @@
+import { login } from '../api/authApi.js';
+import { validateEmail } from '../utils/forms.js';
+const form = document.getElementById('loginForm');
+const alertEl = document.getElementById('alert');
+const pwdToggle = document.getElementById('togglePwd');
+
+pwdToggle.addEventListener('click', ()=> {
+  const pwd = document.getElementById('password');
+  pwd.type = pwd.type === 'password' ? 'text' : 'password';
+  pwdToggle.textContent = pwd.type === 'password' ? 'Show' : 'Hide';
+});
+
+form.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  alertEl.classList.add('d-none');
+  const email = form.email.value.trim();
+  const password = form.password.value;
+  if (!validateEmail(email)){ alertEl.className='alert alert-danger'; alertEl.textContent='Invalid email'; alertEl.classList.remove('d-none'); return; }
+  if (!password){ alertEl.className='alert alert-danger'; alertEl.textContent='Password required'; alertEl.classList.remove('d-none'); return; }
+  try{
+    const res = await login(email, password);
+    // after login, call /me to determine role & redirect
+    const me = await (await fetch((window.API_BASE_URL||'http://127.0.0.1:8000/api').replace(/\/$/,'') + '/me', { credentials:'include' })).json();
+    if ((me.roles||[]).includes('admin')) location.href = '/admin/users.html';
+    else location.href = '/me.html';
+  }catch(err){
+    alertEl.className='alert alert-danger';
+    alertEl.textContent = err?.message || 'Login failed';
+    alertEl.classList.remove('d-none');
+  }
+});
