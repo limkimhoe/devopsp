@@ -60,3 +60,4 @@ class UsersListOut(BaseModel):
     total: int
     page: int
     per_page: int
+    total_pages: Optional[int] = None

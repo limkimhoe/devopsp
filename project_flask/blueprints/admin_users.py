@@ -3,7 +3,7 @@ from ..schemas import CreateUserRequest, UsersListOut, UserOut, AdminUpdateUserR
 from ..utils.auth import login_required, require_role
 from ..services.user_service import create_user, list_users, get_user_by_id, update_user_admin, ban_user, unban_user
 from ..services.auth_service import revoke_all_for_user
-from ..models import User
+from ..models import User, Role
 from ..extensions import db
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin/users")
@@ -35,6 +35,17 @@ def create_user_endpoint():
         "updated_at": user.updated_at.isoformat() if user.updated_at else None,
     }
     return jsonify(UserOut.model_validate(out).model_dump()), 201
+
+@admin_bp.route("/roles", methods=["GET"])
+@login_required
+@require_role("admin")
+def list_roles_endpoint():
+    """
+    Return a simple list of role names. Admin-only.
+    """
+    roles = Role.query.order_by(Role.name).all()
+    names = [r.name for r in roles]
+    return jsonify(names), 200
 
 @admin_bp.route("", methods=["GET"])
 @login_required
