@@ -66,6 +66,15 @@ class RefreshToken(db.Model):
     ip_address = db.Column(INET().with_variant(db.String(45), "sqlite"), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+class Building(db.Model):
+    __tablename__ = "buildings"
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    name = db.Column(db.String(255), nullable=False)
+    gml_file_path = db.Column(db.Text, nullable=False)
+    texture_file_path = db.Column(db.Text, nullable=False)
+    xml_data = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
+
 class AuditLog(db.Model):
     __tablename__ = "audit_logs"
     id = db.Column(db.String(36), primary_key=True, default=gen_uuid)

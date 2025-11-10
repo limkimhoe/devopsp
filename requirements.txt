@@ -29,6 +29,7 @@ requests>=2.32
 loguru>=0.7
 pytest>=7.4
 coverage>=7.5
+Pillow>=10.0
 
 # Optional: Jupyter for notebooks during exploration
 jupyterlab>=4.2

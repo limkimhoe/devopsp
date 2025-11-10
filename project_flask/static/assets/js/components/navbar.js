@@ -15,6 +15,7 @@ export async function renderNavbar(containerId='navbar'){
     </button>
     <div class="collapse navbar-collapse" id="navMain">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" href="/buildings.html">Buildings</a></li>
         ${roles.includes('admin') ? '<li class="nav-item"><a class="nav-link" href="/admin/users.html">Users</a></li>' : ''}
         <li class="nav-item"><a class="nav-link" href="/me.html">My Profile</a></li>
       </ul>

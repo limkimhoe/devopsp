@@ -61,3 +61,21 @@ class UsersListOut(BaseModel):
     page: int
     per_page: int
     total_pages: Optional[int] = None
+
+class BuildingOut(BaseModel):
+    id: str
+    name: str
+    gml_file_path: str
+    texture_file_path: str
+    xml_data: str
+    created_at: str
+
+class CreateBuildingRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+
+class BuildingsListOut(BaseModel):
+    items: List[BuildingOut]
+    total: int
+    page: int
+    per_page: int
+    total_pages: Optional[int] = None

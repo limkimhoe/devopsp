@@ -79,6 +79,11 @@ def create_app(config_object: str | None = None) -> Flask:
         from flask import render_template
         return render_template("admin/user-detail.html")
 
+    @app.route("/buildings.html")
+    def buildings_page():
+        from flask import render_template
+        return render_template("buildings.html")
+
     @app.route("/403.html")
     def forbidden_page():
         from flask import render_template
