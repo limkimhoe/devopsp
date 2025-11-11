@@ -28,3 +28,46 @@ with app.app_context():
             db.session.add(r)
     db.session.commit()
     print("Done.")
+
+
+
+# Add to scripts/init_db.py after role seeding
+from project_flask.models import User, UserProfile, UserRole
+from project_flask.utils.security import hash_password
+
+# Seed admin user
+admin_email = "admin@example.com"
+admin_password = "AdminPass123!"  # Change this!
+
+existing_admin = User.query.filter_by(email=admin_email).first()
+if not existing_admin:
+    print(f"Creating admin user: {admin_email}")
+    
+    # Create user
+    admin_user = User(
+        email=admin_email,
+        password_hash=hash_password(admin_password),
+        is_active=True
+    )
+    db.session.add(admin_user)
+    db.session.flush()  # Get the ID
+    
+    # Create profile
+    profile = UserProfile(
+        user_id=admin_user.id,
+        display_name="System Administrator",
+        first_name="Admin",
+        last_name="User"
+    )
+    db.session.add(profile)
+    
+    # Assign admin role
+    admin_role = Role.query.filter_by(name="admin").first()
+    if admin_role:
+        user_role = UserRole(user_id=admin_user.id, role_id=admin_role.id)
+        db.session.add(user_role)
+    
+    db.session.commit()
+    print(f"Admin user created successfully!")
+else:
+    print("Admin user already exists")
