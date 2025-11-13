@@ -17,6 +17,10 @@ class Config:
         "DATABASE_URL", "sqlite:///dev.db"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # SSL configuration removed to allow NeonDB's sslmode=require to work
+    # SQLALCHEMY_ENGINE_OPTIONS = {
+    #     'connect_args': {'sslmode': 'disable'}
+    # }
 
     # JWT / Auth
     # For RS256 provide PRIVATE_KEY / PUBLIC_KEY as PEM strings in .env.

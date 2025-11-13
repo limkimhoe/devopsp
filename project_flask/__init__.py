@@ -26,38 +26,37 @@ def create_app(config_object: str | None = None) -> Flask:
     # register blueprints (api under /api)
     register_blueprints(app)
 
-    # initialize DB and seed roles on first request if needed
-    _db_initialized = False
-    def _init_db():
-        nonlocal _db_initialized
-        if _db_initialized:
-            return
-        try:
-            # import models here to avoid circular imports at module import time
-            from .models import Role
-            # create tables first (safe in most SQLAlchemy backends)
-            db.create_all()
-            # now check for existing roles after tables are created
-            existing = {r.name for r in Role.query.all()}
-            for name in ("admin", "standard"):
-                if name not in existing:
-                    db.session.add(Role(name=name))
-            db.session.commit()
-            _db_initialized = True
-        except Exception as e:
-            # avoid crashing the app if DB unavailable; log for diagnosis
-            import logging
-            logging.getLogger("project_flask.init_db").exception("DB init failed: %s", e)
-
-    @app.before_request
-    def ensure_db():
-        _init_db()
+    # Database should be initialized manually using: python scripts/init_db.py
+    # This prevents Gunicorn worker timeouts on first request
 
     # routes serving frontend templates
     @app.route("/")
     def index():
         from flask import render_template
         return render_template("index.html")
+
+    @app.route("/health")
+    def health():
+        """Simple health check without database operations"""
+        return {"status": "ok", "database": "not_tested"}
+    
+    @app.route("/health/db")
+    def health_db():
+        """Health check with database connection test"""
+        try:
+            db.session.execute(db.text("SELECT 1"))
+            db_url = app.config['SQLALCHEMY_DATABASE_URI']
+            # Show partial URL for security (first 50 chars + indicator)
+            url_preview = db_url[:50] + "..." if len(db_url) > 50 else db_url
+            using_neondb = 'neondb_owner' in db_url
+            return {
+                "status": "ok", 
+                "database": "connected",
+                "url_preview": url_preview,
+                "using_neondb": using_neondb
+            }
+        except Exception as e:
+            return {"status": "error", "database": str(e)}, 500
 
     @app.route("/login.html")
     def login_page():
