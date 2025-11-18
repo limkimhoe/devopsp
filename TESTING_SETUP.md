@@ -95,7 +95,7 @@ FLASK_RUN_HOST=127.0.0.1
 FLASK_RUN_PORT=5001
 SECRET_KEY=test-secret-key-for-testing
 
-# Test Database (Neon PostgreSQL)
+# Test Database (Neon PostgreSQL for testing)
 DATABASE_URL=postgresql://neondb_owner:npg_0RILPQnYtF9Z@ep-cold-scene-a1q7voma-pooler.ap-southeast-1.aws.neon.tech/test_db?sslmode=require
 
 # JWT for testing
@@ -109,6 +109,8 @@ JWT_REFRESH_EXPIRES_SECONDS=3600
 
 # Other testing settings...
 ```
+
+**Note:** The test configuration automatically overrides the database URL to use SQLite in-memory for fast, isolated testing. The Neon PostgreSQL URL in `.env.test` is available for integration testing if needed.
 
 ### 3. Database Setup
 
@@ -125,9 +127,20 @@ flask db upgrade
 python scripts/seed_admin.py
 ```
 
-#### For Testing (Neon PostgreSQL):
+#### For Testing:
 
-The testing database will be automatically set up during test runs. Ensure your Neon database is accessible.
+**Tests use SQLite in-memory database automatically** - no manual setup required! The test configuration in `tests/conftest.py` automatically:
+- Creates SQLite in-memory database for each test session
+- Sets up all tables using `db.create_all()`
+- Creates default roles (admin, user)
+- Provides clean database state for each test
+- Handles proper cleanup after tests
+
+This provides:
+✅ **Fast test execution** (no network calls)
+✅ **Perfect isolation** between tests
+✅ **No external dependencies** for testing
+✅ **Automatic setup/teardown**
 
 ## 🚀 Installation Steps
 
