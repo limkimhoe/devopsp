@@ -11,6 +11,7 @@ class Config:
     ENV = os.getenv("FLASK_ENV", "production")
     DEBUG = ENV == "development"
     SECRET_KEY = os.getenv("SECRET_KEY", "change-me")
+    TESTING = ENV == "testing"
 
     # Database
     SQLALCHEMY_DATABASE_URI = os.getenv(
@@ -45,3 +46,31 @@ class Config:
 
     # Misc
     PREFERRED_URL_SCHEME = "https" if os.getenv("FORCE_HTTPS", "false").lower() == "true" else "http"
+
+
+class TestingConfig(Config):
+    """Testing configuration"""
+    TESTING = True
+    DEBUG = False
+    # Use in-memory SQLite for faster tests
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    # Use simpler JWT algorithm for testing
+    JWT_ALGORITHM = "HS256"
+    JWT_PRIVATE_KEY = "test-jwt-secret-key"
+    JWT_PUBLIC_KEY = "test-jwt-secret-key"
+    # Shorter token lifetimes for testing
+    JWT_ACCESS_EXPIRES = 300  # 5 minutes
+    JWT_REFRESH_EXPIRES = 3600  # 1 hour
+    # Disable CSRF for testing
+    WTF_CSRF_ENABLED = False
+    # Smaller pagination for tests
+    DEFAULT_PER_PAGE = 5
+    MAX_PER_PAGE = 20
+
+
+def get_config():
+    """Get configuration based on environment"""
+    env = os.getenv("FLASK_ENV", "production")
+    if env == "testing":
+        return TestingConfig()
+    return Config()
