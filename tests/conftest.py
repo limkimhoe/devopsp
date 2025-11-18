@@ -18,18 +18,16 @@ from project_flask.config import TestingConfig
 def app():
     """Create application for testing"""
     os.environ['FLASK_ENV'] = 'testing'
-    app = create_app(TestingConfig())
+    
+    # Force SQLite in-memory for tests
+    test_config = TestingConfig()
+    test_config.SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    
+    app = create_app(test_config)
     
     with app.app_context():
         # Create all tables
         db.create_all()
-        
-        # Create default roles
-        admin_role = Role(name='admin')
-        user_role = Role(name='user')
-        db.session.add(admin_role)
-        db.session.add(user_role)
-        db.session.commit()
         
         yield app
         
@@ -51,21 +49,23 @@ def runner(app):
 
 @pytest.fixture(autouse=True)
 def db_session(app):
-    """Create clean database session for each test"""
+    """Create clean database for each test"""
     with app.app_context():
-        # Start a transaction
-        connection = db.engine.connect()
-        transaction = connection.begin()
+        # Clear all data between tests
+        for table in reversed(db.metadata.sorted_tables):
+            db.session.execute(table.delete())
         
-        # Configure session to use the transaction
-        db.session.configure(bind=connection)
+        # Create default roles for each test
+        admin_role = Role(name='admin')
+        user_role = Role(name='user')
+        db.session.add(admin_role)
+        db.session.add(user_role)
+        db.session.commit()
         
         yield db.session
         
-        # Rollback transaction
-        transaction.rollback()
-        connection.close()
-        db.session.remove()
+        # Cleanup after test
+        db.session.rollback()
 
 
 @pytest.fixture
@@ -217,9 +217,13 @@ def auth_headers(client, test_user):
     })
     
     if response.status_code == 200:
-        access_token = response.json['access_token']
-        return {'Authorization': f'Bearer {access_token}'}
+        data = response.get_json()
+        if data and 'access' in data:
+            access_token = data['access']
+            return {'Authorization': f'Bearer {access_token}'}
     
+    # For debugging - print what we actually got
+    print(f"Login failed: {response.status_code}, {response.get_json()}")
     return {}
 
 
@@ -232,7 +236,11 @@ def admin_auth_headers(client, admin_user):
     })
     
     if response.status_code == 200:
-        access_token = response.json['access_token']
-        return {'Authorization': f'Bearer {access_token}'}
+        data = response.get_json()
+        if data and 'access' in data:
+            access_token = data['access']
+            return {'Authorization': f'Bearer {access_token}'}
     
+    # For debugging - print what we actually got
+    print(f"Admin login failed: {response.status_code}, {response.get_json()}")
     return {}

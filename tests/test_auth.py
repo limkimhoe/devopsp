@@ -24,12 +24,12 @@ class TestAuthLogin:
         
         assert response.status_code == 200
         data = response.get_json()
-        assert 'access_token' in data
-        assert 'refresh_token' in data
+        assert 'access' in data
+        assert 'refresh' in data
         
         # Verify tokens are valid JWTs
-        access_token = data['access_token']
-        refresh_token = data['refresh_token']
+        access_token = data['access']
+        refresh_token = data['refresh']
         
         # Should be able to decode access token
         access_payload = jwt.decode(
@@ -124,7 +124,7 @@ class TestAuthRefresh:
             'password': 'TestPass123!'
         })
         
-        refresh_token = login_response.get_json()['refresh_token']
+        refresh_token = login_response.get_json()['refresh']
         
         # Use refresh token
         response = client.post('/api/auth/refresh', 
@@ -132,12 +132,12 @@ class TestAuthRefresh:
         
         assert response.status_code == 200
         data = response.get_json()
-        assert 'access_token' in data
-        assert 'refresh_token' in data
+        assert 'access' in data
+        assert 'refresh' in data
         
         # New tokens should be different
-        assert data['access_token'] != login_response.get_json()['access_token']
-        assert data['refresh_token'] != refresh_token
+        assert data['access'] != login_response.get_json()['access']
+        assert data['refresh'] != refresh_token
 
     def test_refresh_success_with_cookie(self, client, test_user):
         """Test successful refresh with cookie"""
@@ -147,7 +147,7 @@ class TestAuthRefresh:
             'password': 'TestPass123!'
         })
         
-        refresh_token = login_response.get_json()['refresh_token']
+        refresh_token = login_response.get_json()['refresh']
         
         # Set cookie and use refresh
         client.set_cookie('localhost', 'test_refresh_token', refresh_token)
@@ -155,8 +155,8 @@ class TestAuthRefresh:
         
         assert response.status_code == 200
         data = response.get_json()
-        assert 'access_token' in data
-        assert 'refresh_token' in data
+        assert 'access' in data
+        assert 'refresh' in data
 
     def test_refresh_missing_token(self, client):
         """Test refresh without token"""
