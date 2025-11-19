@@ -25,10 +25,29 @@ Before setting up the testing environment, ensure you have:
 
 ## 🌍 Environment Setup
 
-### 1. Clone and Setup Project
+### For Dev Container Users (Recommended)
+
+If you're using VS Code with dev containers (as recommended for this project):
 
 ```bash
-# Clone the repository
+# 1. Open project in VS Code
+code .
+
+# 2. Reopen in container via Command Palette
+# Ctrl/Cmd + Shift + P -> "Dev Containers: Reopen in Container"
+# All dependencies and environment setup is handled automatically!
+
+# 3. Verify setup in container terminal
+python --version  # Should show Python 3.11.x
+pip list | grep pytest  # Should show pytest is installed
+```
+
+### For Local Development (Alternative)
+
+If you prefer local development without containers:
+
+```bash
+# Clone the repository (if not already done)
 git clone <your-repo-url>
 cd project_flask
 
@@ -40,11 +59,7 @@ python -m venv venv
 source venv/bin/activate
 # On Windows:
 # venv\Scripts\activate
-```
 
-### 2. Install Dependencies
-
-```bash
 # Install all dependencies including testing packages
 pip install -r requirements.txt
 ```
