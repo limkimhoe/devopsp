@@ -67,6 +67,10 @@ def refresh():
             return jsonify({"detail": "Refresh token reuse detected"}), 401
         if msg == "user_not_allowed":
             return jsonify({"detail": "User not allowed"}), 403
+        if msg == "invalid_token":
+            return jsonify({"detail": "Invalid refresh token"}), 401
+        if msg == "token_not_refresh":
+            return jsonify({"detail": "Invalid token type"}), 401
         return jsonify({"detail": "Invalid refresh token"}), 401
     resp = jsonify(TokenResponse.model_validate(tokens).model_dump())
     # rotate cookie

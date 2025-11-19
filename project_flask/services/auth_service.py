@@ -60,7 +60,10 @@ def _decode_jwt(token: str) -> dict:
         key = current_app.config["JWT_PUBLIC_KEY"]
         try:
             return jwt.decode(token, key, algorithms=[alg])
-        except Exception as e:
+        except jwt.InvalidTokenError as e:
+            # For malformed tokens, don't fall back - raise immediately
+            if isinstance(e, jwt.DecodeError):
+                raise ValueError("invalid_token")
             import logging, traceback
             logging.getLogger("project_flask.auth").warning(
                 "RS decode with configured public key failed (%s); falling back to HS256. Error: %s",
@@ -68,8 +71,11 @@ def _decode_jwt(token: str) -> dict:
             )
 
     # Fallback to symmetric verification using SECRET_KEY
-    key = current_app.config.get("SECRET_KEY")
-    return jwt.decode(token, key, algorithms=["HS256"])
+    try:
+        key = current_app.config.get("SECRET_KEY")
+        return jwt.decode(token, key, algorithms=["HS256"])
+    except jwt.InvalidTokenError as e:
+        raise ValueError("invalid_token")
 
 def issue_tokens_for_user(user: User, request_meta: dict | None = None) -> dict:
     """Issue access + refresh tokens. Persist refresh token in DB."""

@@ -216,30 +216,45 @@ class TestBuildingService:
 class TestBuildingEndpoints:
     """Test building management endpoints"""
 
-    @patch('os.makedirs')
-    @patch('os.getcwd')
-    def test_create_building_success(self, mock_getcwd, mock_makedirs, client, auth_headers):
+    @patch('project_flask.blueprints.buildings.create_building')
+    def test_create_building_success(self, mock_create, client, auth_headers, db_session):
         """Test successful building creation via endpoint"""
-        mock_getcwd.return_value = '/test'
+        # Create a mock building to return
+        mock_building = Building(
+            name='Test Building API',
+            gml_file_path='/test/gml_test.gml',
+            texture_file_path='/test/texture_test.tif',
+            xml_data='<test>xml</test>'
+        )
+        mock_building.id = 'test-building-id'
+        from datetime import datetime
+        mock_building.created_at = datetime.utcnow()
+        mock_create.return_value = mock_building
         
         # Create mock file data
         gml_data = BytesIO(b'<?xml version="1.0"?><gml:FeatureCollection></gml:FeatureCollection>')
         texture_data = BytesIO(b'fake tiff content')
         
-        with patch('project_flask.services.building_service.extract_xml_from_gml', return_value='<test>xml</test>'):
-            response = client.post('/api/buildings',
-                                 headers=auth_headers,
-                                 data={
-                                     'name': 'Test Building API',
-                                     'gml_file': (gml_data, 'test.gml'),
-                                     'texture_file': (texture_data, 'test.tif')
-                                 },
-                                 content_type='multipart/form-data')
+        response = client.post('/api/buildings',
+                             headers=auth_headers,
+                             data={
+                                 'name': 'Test Building API',
+                                 'gml_file': (gml_data, 'test.gml'),
+                                 'texture_file': (texture_data, 'test.tif')
+                             },
+                             content_type='multipart/form-data')
         
         assert response.status_code == 201
         data = response.get_json()
         assert data['name'] == 'Test Building API'
         assert data['xml_data'] == '<test>xml</test>'
+        
+        # Verify the service was called with the right arguments
+        mock_create.assert_called_once()
+        args = mock_create.call_args[0]
+        assert args[0] == 'Test Building API'  # name
+        assert args[1].filename == 'test.gml'  # gml_file
+        assert args[2].filename == 'test.tif'  # texture_file
 
     def test_create_building_unauthorized(self, client):
         """Test building creation without authentication"""
@@ -480,7 +495,7 @@ class TestBuildingEndpoints:
 class TestBuildingModuleEdgeCases:
     """Test edge cases and error conditions for building module"""
 
-    @patch('project_flask.services.building_service.create_building')
+    @patch('project_flask.blueprints.buildings.create_building')
     def test_create_building_service_error(self, mock_create, client, auth_headers):
         """Test building creation when service raises exception"""
         mock_create.side_effect = Exception("Database error")
@@ -501,7 +516,7 @@ class TestBuildingModuleEdgeCases:
         data = response.get_json()
         assert 'Failed to create building' in data['detail']
 
-    @patch('project_flask.services.building_service.list_buildings')
+    @patch('project_flask.blueprints.buildings.list_buildings')
     def test_list_buildings_service_error(self, mock_list, client, auth_headers):
         """Test building listing when service raises exception"""
         mock_list.side_effect = Exception("Database error")
@@ -512,7 +527,7 @@ class TestBuildingModuleEdgeCases:
         data = response.get_json()
         assert 'Failed to list buildings' in data['detail']
 
-    @patch('project_flask.services.building_service.delete_building')
+    @patch('project_flask.blueprints.buildings.delete_building')
     def test_delete_building_service_error(self, mock_delete, client, auth_headers, test_building):
         """Test building deletion when service raises exception"""
         mock_delete.side_effect = Exception("Filesystem error")

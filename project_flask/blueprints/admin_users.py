@@ -23,7 +23,13 @@ def create_user_endpoint():
     roles = body.roles or []
     profile = body.profile.model_dump() if body.profile else None
 
-    user = create_user(body.email, temp_password, roles, profile)
+    try:
+        user = create_user(body.email, temp_password, roles, profile)
+    except ValueError as e:
+        if str(e) == "Email already exists":
+            return jsonify({"detail": "Email already exists"}), 409
+        return jsonify({"detail": f"Failed to create user: {str(e)}"}), 500
+
     out = {
         "id": user.id,
         "email": user.email,

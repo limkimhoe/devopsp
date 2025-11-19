@@ -1,6 +1,7 @@
 from typing import Optional, List, Tuple
 from datetime import datetime
 from sqlalchemy import or_, func
+from sqlalchemy.exc import IntegrityError
 
 from ..models import User, UserProfile, Role, UserRole
 from ..extensions import db
@@ -10,7 +11,12 @@ def create_user(email: str, temp_password: str, roles: List[str], profile_data: 
     password_hash = hash_password(temp_password or "ChangeMe123!")
     user = User(email=email.lower().strip(), password_hash=password_hash)
     db.session.add(user)
-    db.session.flush()  # assign id
+    
+    try:
+        db.session.flush()  # assign id
+    except IntegrityError:
+        db.session.rollback()
+        raise ValueError("Email already exists")
 
     # profile
     if profile_data:
