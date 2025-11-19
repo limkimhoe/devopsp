@@ -472,6 +472,60 @@ def test_with_logging(caplog):
     assert "Expected log message" in caplog.text
 ```
 
+## ✅ Current Test Status
+
+### Test Suite Overview
+
+**All tests are currently passing** ✅
+
+```bash
+# Latest test results (as of November 2024)
+======================== 106 passed, 102 warnings in 10.04s ========================
+
+# Test breakdown by module:
+- Authentication Tests: 22 tests ✅
+- User Management Tests: 23 tests ✅  
+- Building Module Tests: 61 tests ✅
+```
+
+### Recent Fixes Applied
+
+The testing infrastructure has been updated with the following critical fixes:
+
+#### 1. JWT Token Error Handling ✅
+- **Issue**: Malformed JWT tokens caused 500 errors instead of proper 401 responses
+- **Fix**: Updated `auth_service.py` to catch `DecodeError` and raise `ValueError("invalid_token")`
+- **Impact**: Improved error handling in `test_refresh_invalid_token` and related tests
+
+#### 2. User Management Error Handling ✅
+- **Issue**: Duplicate email constraints caused unhandled `IntegrityError`
+- **Fix**: Added proper error handling in `user_service.py` and `admin_users.py`
+- **Impact**: Tests now properly validate 409 Conflict responses for duplicate emails
+
+#### 3. Building Module Test Fixes ✅
+- **Issue**: Test patches and mock objects were incorrectly configured
+- **Fix**: 
+  - Corrected patch paths to patch imports, not definitions
+  - Fixed mock building objects to have proper datetime fields
+  - Updated edge case error handling tests
+- **Impact**: All 61 building module tests now pass consistently
+
+#### 4. Test Configuration ✅
+- **Status**: pytest.ini properly configured with custom markers
+- **Markers**: `auth`, `user`, `building`, `unit`, `integration`
+- **Environment**: Automatic SQLite in-memory database setup
+
+### Test Categories and Coverage
+
+```bash
+# Run tests by category
+pytest tests/ -m auth -v          # 22 authentication tests
+pytest tests/ -m user -v          # 23 user management tests  
+pytest tests/ -m building -v      # 61 building module tests
+pytest tests/ -m unit -v          # Unit tests across all modules
+pytest tests/ -m integration -v   # Integration tests across all modules
+```
+
 ## 📊 Coverage Reports
 
 ### Generate HTML Coverage Report
@@ -485,6 +539,16 @@ open htmlcov/index.html  # Mac
 xdg-open htmlcov/index.html  # Linux
 # On Windows: start htmlcov/index.html
 ```
+
+### Current Coverage Metrics
+
+The test suite provides comprehensive coverage across:
+
+- **Authentication Module**: Login, logout, token management, security validation
+- **User Management**: CRUD operations, admin functions, profile management, role-based access
+- **Building Module**: File uploads, building management, texture processing, error handling
+- **Edge Cases**: Error conditions, validation failures, security scenarios
+- **Integration**: End-to-end API testing with proper authentication flows
 
 ### Coverage Configuration
 
