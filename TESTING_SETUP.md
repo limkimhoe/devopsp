@@ -547,17 +547,424 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
 ```
 
+## 🐳 Docker Container Testing
+
+### Docker Environment Overview
+
+Your project supports both **local development** and **containerized development** with comprehensive testing capabilities in both environments.
+
+#### Container Architecture
+
+```
+┌─────────────────────────────────────────┐
+│  VS Code Dev Container                  │
+│  ┌─────────────────────────────────────┐│
+│  │  Flask App Container (devapp)       ││
+│  │  - Python 3.11                     ││
+│  │  - pytest + all dependencies       ││
+│  │  - Live code mounting              ││
+│  │  - Port 5000, 8888                 ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │  PostgreSQL Container (devpg)       ││
+│  │  - postgres:16                     ││
+│  │  - Port 5434 (external)            ││
+│  │  - Persistent data volume          ││
+│  └─────────────────────────────────────┘│
+└─────────────────────────────────────────┘
+```
+
+### 1. Dev Container Setup
+
+#### Prerequisites for Container Development
+
+```bash
+# Required software
+- Docker Desktop or Docker Engine
+- VS Code with "Dev Containers" extension
+- Git
+
+# Optional but recommended
+- Docker Compose (included with Docker Desktop)
+```
+
+#### Opening Project in Dev Container
+
+```bash
+# Method 1: VS Code Command Palette
+# 1. Open VS Code
+# 2. Ctrl/Cmd + Shift + P
+# 3. Type: "Dev Containers: Reopen in Container"
+# 4. Wait for container build and setup
+
+# Method 2: From command line
+code .
+# Then use Command Palette as above
+
+# Method 3: Direct container startup
+cd /workspace
+docker-compose -f .devcontainer/docker-compose.yml up -d
+docker exec -it devapp bash
+```
+
+#### Container Service Management
+
+```bash
+# Start all services
+docker-compose -f .devcontainer/docker-compose.yml up -d
+
+# Check service status
+docker-compose -f .devcontainer/docker-compose.yml ps
+
+# View logs
+docker-compose -f .devcontainer/docker-compose.yml logs app
+docker-compose -f .devcontainer/docker-compose.yml logs db
+
+# Stop all services
+docker-compose -f .devcontainer/docker-compose.yml down
+
+# Rebuild containers (after dependency changes)
+docker-compose -f .devcontainer/docker-compose.yml up --build -d
+```
+
+### 2. Running Tests in Containers
+
+#### Inside Dev Container (Recommended)
+
+When working in VS Code dev container, tests run directly in the Flask app container:
+
+```bash
+# Basic test commands (same as local)
+pytest tests/ -v                    # All tests
+pytest tests/ -m auth -v            # Auth tests only
+pytest tests/ -m user -v            # User management tests
+pytest tests/ -m building -v        # Building module tests
+
+# Container-optimized commands
+pytest tests/ --maxfail=5 -v        # Stop after 5 failures
+pytest tests/ --tb=short -v         # Shorter tracebacks
+pytest tests/ -x --lf              # Stop on first failure, run last failed
+```
+
+#### From Host Machine
+
+Run tests in container from outside:
+
+```bash
+# Execute tests in running container
+docker exec -it devapp pytest tests/ -v
+
+# Run specific test modules
+docker exec -it devapp pytest tests/test_auth.py -v
+
+# Run with coverage
+docker exec -it devapp pytest tests/ --cov=project_flask --cov-report=html
+
+# Interactive shell for debugging
+docker exec -it devapp bash
+# Then run pytest commands inside container
+```
+
+#### One-off Container Testing
+
+```bash
+# Run tests in fresh container (database isolated)
+docker run --rm \
+  -v $(pwd):/workspace \
+  -w /workspace \
+  --env-file .env.test \
+  python:3.11-slim \
+  bash -c "pip install -r requirements.txt && pytest tests/ -v"
+```
+
+### 3. Container Database Testing
+
+#### Database Options in Containers
+
+**Option 1: SQLite In-Memory (Default for Tests)**
+```bash
+# Automatic - no setup required
+# Tests use SQLite regardless of container PostgreSQL
+pytest tests/ -v
+```
+
+**Option 2: Container PostgreSQL for Integration Tests**
+```bash
+# Create test database in container PostgreSQL
+docker exec -it devpg createdb -U appuser test_integration_db
+
+# Run tests against container database
+export DATABASE_URL="postgresql://appuser:appsecret@localhost:5434/test_integration_db"
+pytest tests/ -v --tb=short
+```
+
+**Option 3: Separate Test Database Container**
+```yaml
+# Add to .devcontainer/docker-compose.yml
+  testdb:
+    image: postgres:16
+    container_name: testpg
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: testdb
+    ports:
+      - "5435:5432"
+    tmpfs:
+      - /var/lib/postgresql/data  # In-memory database
+```
+
+### 4. Container Testing Workflows
+
+#### Development Testing Workflow
+
+```bash
+# 1. Start dev container
+code .  # Open in VS Code, reopen in container
+
+# 2. Verify container setup
+python --version  # Should be 3.11.x
+pip list | grep pytest  # Verify pytest installed
+which python  # Should be /usr/local/bin/python
+
+# 3. Run tests to verify setup
+pytest tests/test_auth.py::TestAuthLogin::test_login_success -v
+
+# 4. Run full test suite
+pytest tests/ -v
+
+# 5. Generate coverage report
+pytest tests/ --cov=project_flask --cov-report=html
+# View at http://localhost:5000/htmlcov/index.html (if serving)
+```
+
+#### Continuous Testing Workflow
+
+```bash
+# Watch for changes and auto-run tests
+# Install pytest-watch in container
+pip install pytest-watch
+
+# Watch and run tests on file changes
+ptw tests/ -- -v --tb=short
+
+# Watch specific modules
+ptw tests/test_auth.py -- -v
+```
+
+#### Database Migration Testing in Container
+
+```bash
+# Test migrations in container PostgreSQL
+export FLASK_APP=project_flask
+export DATABASE_URL="postgresql://appuser:appsecret@db:5432/appdb"
+
+# Test migration workflow
+flask db upgrade
+pytest tests/ -v
+flask db downgrade
+flask db upgrade
+```
+
+### 5. Docker-Specific Testing Commands
+
+#### Container Health Checks
+
+```bash
+# Check if containers are healthy
+docker-compose -f .devcontainer/docker-compose.yml ps
+
+# Test database connectivity from app container
+docker exec -it devapp python scripts/test_db_connection.py
+
+# Test Flask app startup in container
+docker exec -it devapp python -c "from project_flask import create_app; print('✅ Flask imports successfully')"
+
+# Verify pytest configuration
+docker exec -it devapp pytest --collect-only tests/
+```
+
+#### Performance Testing in Containers
+
+```bash
+# Run tests with timing
+docker exec -it devapp pytest tests/ --durations=10 -v
+
+# Memory usage monitoring
+docker exec -it devapp pytest tests/ --profile -v
+
+# Parallel test execution (if pytest-xdist installed)
+docker exec -it devapp pytest tests/ -n auto -v
+```
+
+#### Container Log Analysis
+
+```bash
+# View test output with container logs
+docker-compose -f .devcontainer/docker-compose.yml logs -f app &
+pytest tests/ -v -s
+
+# Capture test logs
+docker exec -it devapp pytest tests/ -v --capture=no > test_output.log 2>&1
+```
+
+### 6. Environment Variables in Containers
+
+#### Container Environment Management
+
+```bash
+# Check loaded environment in container
+docker exec -it devapp env | grep -E "(FLASK|DATABASE|JWT)"
+
+# Test environment file loading
+docker exec -it devapp python -c "
+import os
+from dotenv import load_dotenv
+load_dotenv('.env.test')
+print(f'FLASK_ENV: {os.getenv(\"FLASK_ENV\")}')
+print(f'DATABASE_URL: {os.getenv(\"DATABASE_URL\")[:50]}...')
+"
+
+# Override environment for specific tests
+docker exec -it devapp bash -c "
+export FLASK_ENV=testing
+export DATABASE_URL='sqlite:///:memory:'
+pytest tests/test_auth.py -v
+"
+```
+
+### 7. Container Troubleshooting
+
+#### Common Container Issues
+
+**Issue 1: Container Build Failures**
+```bash
+# Clear Docker cache and rebuild
+docker-compose -f .devcontainer/docker-compose.yml down --volumes
+docker system prune -f
+docker-compose -f .devcontainer/docker-compose.yml up --build -d
+
+# Check build logs
+docker-compose -f .devcontainer/docker-compose.yml logs app
+```
+
+**Issue 2: Database Connection Issues**
+```bash
+# Test database connectivity
+docker exec -it devpg pg_isready -U appuser -d appdb
+
+# Check database container health
+docker inspect devpg --format='{{.State.Health.Status}}'
+
+# Manual database connection test
+docker exec -it devapp python -c "
+import psycopg2
+try:
+    conn = psycopg2.connect('postgresql://appuser:appsecret@db:5432/appdb')
+    print('✅ Database connection successful')
+except Exception as e:
+    print(f'❌ Database connection failed: {e}')
+"
+```
+
+**Issue 3: Port Conflicts**
+```bash
+# Check port usage on host
+netstat -tulpn | grep :5434
+lsof -i :5434
+
+# Use different ports in docker-compose.yml
+# Change "5434:5432" to "5436:5432" for database
+```
+
+**Issue 4: Permission Issues**
+```bash
+# Check file permissions in container
+docker exec -it devapp ls -la /workspace
+
+# Fix permission issues
+docker exec -it devapp chown -R vscode:vscode /workspace
+```
+
+**Issue 5: Test Database State Issues**
+```bash
+# Reset container database
+docker exec -it devpg dropdb -U appuser --if-exists appdb
+docker exec -it devpg createdb -U appuser appdb
+
+# Or restart entire stack
+docker-compose -f .devcontainer/docker-compose.yml restart
+```
+
+#### Debug Container Testing
+
+```bash
+# Interactive debugging session
+docker exec -it devapp python -m pdb -m pytest tests/test_auth.py::test_login_success
+
+# Install additional debugging tools in container
+docker exec -it devapp pip install ipdb pytest-pdb
+docker exec -it devapp pytest tests/ --pdb -v
+
+# Container shell with full environment
+docker exec -it devapp bash
+# Then run individual commands for debugging
+```
+
+### 8. Container CI/CD Integration
+
+#### GitHub Actions with Docker
+
+```yaml
+# .github/workflows/docker-test.yml
+name: Docker Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build and test in containers
+        run: |
+          docker-compose -f .devcontainer/docker-compose.yml up -d --build
+          docker-compose -f .devcontainer/docker-compose.yml exec -T app pytest tests/ -v
+          docker-compose -f .devcontainer/docker-compose.yml down
+```
+
+#### Production Container Testing
+
+```bash
+# Build production container
+docker build -f project_flask/Dockerfile -t flask-app:test .
+
+# Test production container
+docker run --rm \
+  --env-file .env.test \
+  -v $(pwd)/tests:/app/tests \
+  flask-app:test \
+  pytest tests/ -v
+
+# Multi-stage container testing
+docker build --target test -f project_flask/Dockerfile -t flask-app:test-stage .
+docker run --rm flask-app:test-stage pytest tests/ -v
+```
+
 ## 📚 Additional Resources
 
 - [Pytest Documentation](https://docs.pytest.org/)
 - [Flask Testing](https://flask.palletsprojects.com/en/2.0.x/testing/)
 - [SQLAlchemy Testing](https://docs.sqlalchemy.org/en/14/orm/session_transaction.html#joining-a-session-into-an-external-transaction)
 - [Coverage.py Documentation](https://coverage.readthedocs.io/)
+- [Docker Development Best Practices](https://docs.docker.com/develop/dev-best-practices/)
+- [VS Code Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
 
 ---
 
 ## 🎯 Quick Reference
 
+### Local Testing
 ```bash
 # Most common commands
 pytest tests/ -v                    # Run all tests
@@ -567,4 +974,20 @@ pytest tests/ -k "login" -v         # Run tests matching "login"
 pytest tests/ -x                    # Stop on first failure
 ```
 
-This testing setup provides comprehensive coverage for your Flask application with proper environment separation and database configuration. Follow these instructions to maintain high code quality through automated testing.
+### Container Testing
+```bash
+# Dev container (inside VS Code)
+pytest tests/ -v                    # Same as local
+pytest tests/ --tb=short -v         # Shorter tracebacks for containers
+
+# From host machine
+docker exec -it devapp pytest tests/ -v                    # All tests in container
+docker exec -it devapp pytest tests/ --cov=project_flask   # Coverage in container
+
+# Container management
+docker-compose -f .devcontainer/docker-compose.yml up -d   # Start containers
+docker-compose -f .devcontainer/docker-compose.yml logs app # View app logs
+docker-compose -f .devcontainer/docker-compose.yml down    # Stop containers
+```
+
+This testing setup provides comprehensive coverage for your Flask application with both local and containerized development environments. The Docker integration ensures consistent testing environments across different development setups while maintaining the same high code quality standards.
